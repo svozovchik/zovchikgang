@@ -5,7 +5,7 @@ import html
 import logging
 import re
 
-from telegram import Message, Update
+from telegram import Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.error import BadRequest
 from telegram.ext import (
@@ -14,6 +14,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
+    MessageHandler,  # ✅ Импортирован настоящий класс-хендлер
     filters,
 )
 
@@ -381,16 +382,18 @@ def build_application(token: str) -> Application:
     app.add_handler(CommandHandler("level", cmd_level))
     app.add_handler(CallbackQueryHandler(on_callback, pattern=r"^lvl:"))
 
-    app.add_handler(Message(filters.VOICE | filters.AUDIO, block=True), on_voice)
-    app.add_handler(Message(filters.Document.ALL, block=True), on_document)
-    app.add_handler(Message(filters.TEXT & ~filters.COMMAND, block=True), on_text)
+    # ✅ Исправлено: используем MessageHandler вместо модели Message
+    # Порядок важен: сначала специфичные, потом общие
+    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, on_voice))
+    app.add_handler(MessageHandler(filters.Document.ALL, on_document))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
+    
+    # Блок-фильтр для «неподдерживаемого»: ловит фото, видео, стикеры, контакты, истории и т.д.
     app.add_handler(
-        Message(
-            filters.PHOTO | filters.Story.ALL | filters.Contact.USER
-            | filters.VIDEO | filters.VideoNote.ALL,
-            block=True,
+        MessageHandler(
+            filters.ATTACHMENT | filters.STORY,
+            on_unsupported,
         ),
-        on_unsupported,
     )
 
     app.add_error_handler(on_error)
