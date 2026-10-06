@@ -388,8 +388,8 @@ def build_application(token: str) -> Application:
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text, block=True))
     app.add_handler(
         MessageHandler(
-            filters.PHOTO | filters.Story.ALL | filters.Contact.USER
-            | filters.VIDEO | filters.VideoNote.ALL,
+            filters.PHOTO | filters.Contact.USER
+            | filters.VIDEO | filters.VIDEO_NOTE,
             on_unsupported,
             block=True,
         )
